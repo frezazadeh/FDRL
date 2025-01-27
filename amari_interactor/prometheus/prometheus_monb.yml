@@ -1,0 +1,8 @@
+# Remote write configuration for Influx
+remote_write:
+  - url: "http://localhost:8086/api/v1/prom/write?db=prometheus_db&u=admin&p=password"
+scrape_configs:
+  - job_name: 'collect-d'
+    scrape_interval: 1s
+    static_configs:
+      - targets: ["localhost:3333"]

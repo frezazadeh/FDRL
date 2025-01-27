@@ -1,0 +1,196 @@
+version: '3'
+
+services:
+
+  listener:
+    build: ./listener
+    cap_add:
+      - NET_ADMIN
+    container_name: listener
+    command:
+      python3 data_collector.py --config data_collector_callbox.config
+    image: listener:latest
+    networks:
+      default:
+        ipv4_address: 192.168.30.20
+    stdin_open: True
+    tty: true
+
+  listener_minibox:
+    build: ./listener
+    cap_add:
+      - NET_ADMIN
+    container_name: listener_minibox
+    image: listener:latest
+    command:
+      python3 data_collector.py --config data_collector_minibox.config
+    networks:
+      default:
+        ipv4_address: 192.168.30.21
+    stdin_open: True
+    tty: true
+
+
+#  federated_agents:
+#    build: ./FederatedAgents
+#    cap_add:
+#      - NET_ADMIN
+#    container_name: federated_agents
+#    image: federated_agents:latest
+#    networks:
+#      default:
+#        ipv4_address: 192.168.30.15
+#    stdin_open: True
+#    tty: true
+#./mgen instance mgen1 event \"0.0 ON 1 UDP DST 192.168.2.2/5000 BURST [REGULAR 25.0 PERIODIC [1400 1500] FIXED 20]\" &
+  traffic_generator_1:
+    build: ./traffic_generator
+    cap_add:
+      - NET_ADMIN
+    command: sh -c "sleep 10 && ip route add 192.168.2.0/24 via 192.168.30.1 &&
+            ./mgen event \"0.0 ON 1 UDP DST 192.168.2.2/5000 BURST [REGULAR 80.0 PERIODIC [700 1500] FIXED 50]\" &
+            ./mgen event \"0.0 ON 2 UDP DST 192.168.2.2/5001 BURST [REGULAR 40.0 PERIODIC [700 1500] FIXED 25]\" &
+            ./mgen event \"o.0 ON 3 UDP DST 192.168.2.2/5002 BURST [REGULAR 20.0 PERIODIC [500 500] EXPONENTIAL 20]\" &
+            ./mgen event \"0.0 ON 4 UDP DST 192.168.2.2/5003 POISSON [700 100]\" &
+            ./mgen event \"30600.0 ON 1 UDP DST 192.168.2.2/5000 BURST [RANDOM 20.0 POISSON [1000 1024] EXP 20]\" &
+            ./mgen event \"30600.0 ON 2 UDP DST 192.168.2.2/5002 BURST [RANDOM 20.0 POISSON [1000 1024] EXP 30]\" &
+      python3 traffic_monitoring.py --id 1"
+
+    container_name: traffic_generator_1
+    image: traffic_generator:latest
+    logging:
+      driver: "none"
+    #depends_on:
+    #  - federated_agents
+    networks:
+      default:
+        ipv4_address: 192.168.30.7
+    stdin_open: False
+    tty: true
+
+  traffic_generator_2:
+    build: ./traffic_generator
+    cap_add:
+      - NET_ADMIN
+    command: sh -c "sleep 10 && ip route add 192.168.2.0/24 via 192.168.30.1 &&
+            ./mgen instance mgen1 event \"0.0 ON 1 UDP DST 192.168.2.6/5000 BURST [REGULAR 80.0 PERIODIC [1400 1500] FIXED 40]\" &
+            ./mgen instance mgen2 event \"0.0 ON 2 UDP DST 192.168.2.6/5001 POISSON [700 100]\" &
+            ./mgen instance mgen3 event \"0.0 ON 3 UDP DST 192.168.2.6/5002 BURST [REGULAR 40.0 PERIODIC [500 1000] EXPONENTIAL 30]\" &
+            ./mgen instance mgen1 event \"30600.0 ON 1 UDP DST 192.168.2.6/5000 BURST [RANDOM 50.0 POISSON [1000 1024] EXP 20]\" &
+            ./mgen instance mgen2 event \"30600.0 ON 2 UDP DST 192.168.2.6/5001 BURST [RANDOM 50.0 POISSON [1000 1024] EXP 30]\" &
+      python3 traffic_monitoring.py --id 2"   # [REGULAR <average interval> PERIODIC [<rate in messages per second> <size in bytes>] FIXED <Burst length in seconds>]
+
+    container_name: traffic_generator_2
+    image: traffic_generator:latest
+    logging:
+      driver: "none"
+    #depends_on:
+    #  - federated_agents
+    networks:
+      default:
+        ipv4_address: 192.168.30.3
+    stdin_open: False
+    tty: true
+
+  traffic_generator_3:
+    build: ./traffic_generator
+    cap_add:
+      - NET_ADMIN
+    command: sh -c "sleep 10 && ip route add 192.168.2.0/24 via 192.168.30.1 &&
+      ./mgen instance mgen1 event \"0.0 ON 1 UDP DST 192.168.2.10/5000 BURST [RANDOM 30.0 POISSON [1000 1024] EXP 40]\" &
+      ./mgen instance mgen2 event \"0.0 ON 1 UDP DST 192.168.2.10/5001 BURST [RANDOM 30.0 POISSON [1000 1024] EXP 30]\" &
+      ./mgen instance mgen3 event \"30600.0 ON 1 UDP DST 192.168.2.10/5000 BURST [REGULAR 80.0 PERIODIC [700 1500] FIXED 60]\" &
+      ./mgen instance mgen4 event \"30600.0 ON 2 UDP DST 192.168.2.10/5001 BURST [REGULAR 80.0 PERIODIC [700 1500] FIXED 60]\" &
+      ./mgen instance mgen1 event \"30600.0 ON 3 UDP DST 192.168.2.10/5002 BURST [RANDOM 80.0 PERIODIC [500 1000] EXPONENTIAL 40]\" &
+      ./mgen instance mgen2 event \"30600.0 ON 4 UDP DST 192.168.2.10/5003 POISSON [700 100]\" &
+      python3 traffic_monitoring.py --id 3"
+
+    container_name: traffic_generator_3
+    image: traffic_generator:latest
+    logging:
+      driver: "none"
+    #depends_on:
+    #  - federated_agents
+    networks:
+      default:
+        ipv4_address: 192.168.30.11
+    stdin_open: False
+    tty: true
+
+  traffic_generator_4:
+    build: ./traffic_generator
+    cap_add:
+      - NET_ADMIN
+    command: sh -c "sleep 10 && ip route add 192.168.2.0/24 via 192.168.30.1 &&
+      ./mgen instance mgen1 event \"0.0 ON 1 UDP DST 192.168.2.14/5000 BURST [RANDOM 40.0 POISSON [1000 1024] EXP 30]\" &
+      ./mgen instance mgen2 event \"0.0 ON 1 UDP DST 192.168.2.14/5001 BURST [RANDOM 40.0 POISSON [1000 1024] EXP 50]\" &
+      ./mgen instance mgen1 event \"30600.0 ON 1 UDP DST 192.168.2.14/5000 BURST [REGULAR 80.0 PERIODIC [1400 1500] FIXED 50]\" &
+      ./mgen instance mgen2 event \"30600.0 ON 1 UDP DST 192.168.2.14/5001 POISSON [700 100]\" &
+        python3 traffic_monitoring.py --id 4"
+
+    container_name: traffic_generator_4
+    image: traffic_generator:latest
+    logging:
+      driver: "none"
+    #depends_on:
+    #  - federated_agents
+    networks:
+      default:
+        ipv4_address: 192.168.30.13
+    stdin_open: False
+    tty: true
+
+
+
+# TODO LATER IF WANT TO MAKE ALL CONTAINER BASED
+#  influxdb:
+#    image: influxdb:1.7
+#    container_name: influxdb
+#    restart: always
+#    volumes:
+#      # Data persistency
+#      - ./conf_files/influxDB/influxdb.conf:/etc/influxdb/influxdb.conf
+#      - ./data:/var/lib/influxdb
+#      - ./data/scripts:/docker-entrypoint-initdb.d
+#    #    user: "998"       #cat /etc/passwd | grep influxdb
+#    networks:
+#      default:
+#        ipv4_address: 192.168.10.5
+#    ports:
+#      - "8086:8086"
+#      - "8089:8089/udp"
+#    environment:
+#        - INFLUXDB_CONFIG_PATH=/etc/influxdb/influxdb.conf
+#        - INFLUXDB_DB="SRSLTE"
+#        - INFLUXDB_ADMIN_USER=admin
+#        - INFLUXDB_ADMIN_PASSWORD=admin
+#        - INFLUXDB_HTTP_AUTH_ENABLED=false
+#        - INFLUXDB_UDP_ENABLED=true
+
+#  grafana:
+#    image: grafana/grafana:latest
+#    container_name: grafana
+#    restart: always
+#    networks:
+#      default:
+#        ipv4_address: 192.168.10.10
+#    ports:
+#      - "3000:3000"
+#    user: "0"
+#    links:
+#      - influxdb
+#    volumes:
+#      # Data persistency
+#      # sudo mkdir -p /logs/grafana/data; chown 472:472 /logs/grafana/data
+#      - ./logs_folder/grafana/data:/var/lib/grafana
+#    environment:
+#      - GF_SECURITY_ADMIN_PASSWORD=admin
+#      - GF_USERS_ALLOW_SIGN_UP=true
+
+networks:
+  default:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.30.0/24
+      driver: default

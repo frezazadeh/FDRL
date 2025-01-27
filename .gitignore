@@ -1,0 +1,10 @@
+
+# pycharm files
+.idea/*
+*.pyc
+
+# virtual environment
+.venv/*
+
+# archives
+*.tar.gz

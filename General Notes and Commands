@@ -1,0 +1,89 @@
+############################
+To run in the VM for generating data
+
+./mgen event "0.0 ON 1 UDP DST 192.168.2.38/5000 BURST [REGULAR 10.0 PERIODIC [1000 1024] FIXED 5]"
+./mgen event "0.0 ON 1 UDP DST 192.168.2.2/5000 BURST [REGULAR 20.0 PERIODIC [500 1024] FIXED 5]"
+
+
+docker exec -it traffic_generator_2 /bin/bash
+
+**************************************************************************************************
+UE IP List
+
+192.168.2.38
+192.168.2.18
+192.168.2.34
+192.168.2.14
+192.168.2.10
+192.168.2.6
+192.168.2.2
+192.168.2.30
+192.168.2.22
+192.168.2.26
+
+**************************************************************************************************
+
+from simbox
+screen -x lte
+service lte status
+ue.cfg -> cttc/groundtruth/ue-nr-sa-tdd.100mhz.mimo4x4.cfg
+enb.cfg -> cttc/groundtruth/gnb-sa-tdd.100mhz.mimo4x4.cfg
+power_off 1
+power_on 1
+
+**************************************************************************************************
+./amari_api.js 10.1.14.249:9001 '{"message":"config_set", "cells": {"1":{"pdsch_fixed_rb_alloc":true, "pdsch_fixed_rb_start":1, "pdsch_fixed_l_crb": 100}}}'
+												allocation_flag		     starting_PRB	     end_PRB
+
+./amari_api.js 10.1.14.249:9001 '{"message":"config_set", "cells": {"1":{"pdsch_fixed_rb_alloc":[true,true], "pdsch_fixed_rb_start":[1,100], "pdsch_fixed_l_crb": [100,100]}}}'
+
+
+./amari_api.js 10.1.14.249:9001 '{"message":"config_set", "cells": {"1":{"pdsch_fixed_rb_alloc":[true,true], "pdsch_fixed_rb_start":[1,101], "pdsch_fixed_l_crb": [100,100]}}}'
+									| 1 				100 | 101 				201|       maximum_prb = 273; minimum_prb = 0 or
+The allocated BWP will be shared by all the attached users
+
+/amari_api.js 10.1.14.249:9001 '{"message":"stats","stats":true}'
+./amari_api.js 10.1.14.249:9001 '{"message":"ue_get","stats":true}'
+
+**************************************************************************************************
+
+
+ssh to the cttc_vm
+sudo screen -x lte  ### see if the lte service is running
+
+ue to see ues active
+power_on UE_ID # to activate and deactivate the UE
+power_off UE_ID
+
+####
+ue.cfg # to run the ues
+
+lte service status # see if its running
+**************************************************************************************************
+
+
+# Get list of UEs and details from Simbox side (e.g., ue_id)
+python3 amari_client.py "get_ue_sim"
+
+# Get list of UEs and details from RAN side (e.g., cell the UE is connected to, MCS, bitrate, etc.)
+python3 amari_client.py "get_ue_ran"
+
+# Get list of UEs with details from CORE side on their ran_ue_id, imsi, etc.
+python3 amari_client.py "get_ue_core"
+
+# Power ON a UE
+python3 amari_client.py "power_on <ue_id from Simbox>"  # e.g. "power_on 1"
+
+# Power OFF a UE
+python3 amari_client.py "power_off <ue_id from Simbox>" # e.g. "power_off 1"
+
+# Handover to another cell
+python3 amari_client.py "handover <RAN_UE_ID from gNB (Callbox)> <cell_pci> <SSB_NR_ARFCN>" # e.g. "handover <RAN_UE_ID from gNB (Callbox)> 10 1 524910"
+
+# To cell 1
+python amari_client.py "handover 10 1 524910"
+# To cell 2
+python amari_client.py "handover 10 2 528030"
+# To cell 3
+python amari_client.py "handover 10 3 530910"
+
